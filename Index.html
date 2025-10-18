@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Life Decisions Simulator</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Poppins&display=swap');
+:root {
+  --bg-light: #f0f0f0;
+  --text-light: #111;
+  --input-text-light: #000;
+  --bg-dark: #1a1a2e;
+  --text-dark: #eee;
+  --input-text-dark: #000;
+  --accent-light: #ff9500;
+  --accent-dark: #ffb347;
+}
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  background: var(--bg-dark);
+  color: var(--text-dark);
+  min-height: 100vh;
+  width: 100vw;
+  transition: background 0.5s, color 0.5s;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+body.light {
+  background: var(--bg-light);
+  color: var(--text-light);
+}
+.container {
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 24px;
+  padding: 56px 20px 100px 20px;
+  max-width: 500px;
+  width: 98%;
+  text-align: center;
+  backdrop-filter: blur(12px);
+  animation: fadeIn 0.9s ease;
+  position: relative;
+  user-select: none;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.68);
+  margin: 40px auto 40px auto;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(30px);}
+  to { opacity: 1; transform: translateY(0);}
+}
+#themeToggle {
+  position: absolute;
+  top: 4px;
+  left: 18px;
+  background: transparent;
+  border: none;
+  font-size: 2.2rem;
+  color: var(--accent-dark);
+  cursor: pointer;
+  filter: drop-shadow(0 0 5px var(--accent-light));
+  user-select: none;
+  z-index: 1000;
+}
+h1.logo {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 2.25rem;
+  margin-bottom: 5px;
+  color: var(--accent-dark);
+  text-shadow:
+    0 0 8px var(--accent-dark),
+    0 0 20px var(--accent-light),
+    0 0 40px var(--accent-dark);
+  letter-spacing: 1.3px;
+}
+.logo-flash {
+  font-size: 2.1rem;
+  margin-bottom: 17px;
+  color: var(--accent-light);
+  letter-spacing: 0px;
+  display: block;
+  font-family: monospace;
+}
+input.big-input {
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  width: 95%;
+  box-sizing: border-box;
+  background: #fff;
+  font-size: 1.15rem;
+  color: #111;
+  margin-bottom: 12px;
+  margin-top: 0;
+  min-height: 48px;
+  display: block;
+}
+button {
+  background: var(--accent-light);
+  border: none;
+  color: var(--text-light);
+  padding: 18px 0px;
+  font-weight: 700;
+  width: 95%;
+  border-radius: 16px;
+  cursor: pointer;
+  margin: 20px 0 0 0;
+  transition: background 0.2s, transform 0.18s;
+  font-size: 1.17rem;
+  display: inline-block;
+}
+button:hover:not(:disabled) {
+  background: var(--accent-dark);
+  transform: scale(1.03);
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.choices {
+  margin-top: 32px;
+}
+.choices button {
+  width: 95%;
+  margin-bottom: 11px;
+}
+.stats {
+  background: rgba(255,255,255,0.11);
+  border-radius: 16px;
+  padding: 12px 17px;
+  margin-top: 30px;
+  text-align: left;
+  font-size: 0.97rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--text-dark);
+}
+.tip {
+  margin-top: 25px;
+  font-size: 1.1em;
+  color: #ffe57a;
+  background: rgba(255,149,0,0.11);
+  border-radius: 13px;
+  padding: 16px 7px 13px 7px;
+  font-style: italic;
+}
+.footer-by {
+  margin-top:34px;
+  color:#ffb347;
+  text-align:center;
+  opacity:0.88;
+  font-size:1.04em;
+  letter-spacing:0.04em;
+}
+.progress-bar-wrapper {
+  display: flex;
+  justify-content: center;
+  position: absolute;
+  left: 0; right: 0; bottom: 17px;
+  width: 100%;
+  pointer-events: none;
+}
+.progress-bar-container {
+  width: 80%;
+  height: 14px;
+  background: rgba(255 255 255 / 0.22);
+  border-radius: 12px;
+  box-shadow: inset 0 0 7px rgba(0,0,0,0.1);
+  pointer-events: all;
+}
+.progress-bar {
+  height: 100%;
+  background: var(--accent-light);
+  width: 0%;
+  border-radius: 12px;
+  transition: width 0.52s cubic-bezier(.4,2,.5,1);
+}
+</style>
+</head>
+<body>
+<div class="container" id="container" tabindex="0">
+  <button id="themeToggle" title="Light/Dark mode" aria-label="Light/Dark mode">🌗</button>
+  <div class="footer-by">created by BOOMBAMA</div>
+</div>
+<script>
+(() => {
+  const container = document.getElementById('container');
+  const btnTheme = document.getElementById('themeToggle');
+  let themeDark = true;
+  btnTheme.onclick = () => {
+    themeDark = !themeDark;
+    document.body.classList.toggle('light', !themeDark);
+    btnTheme.textContent = themeDark ? '🌗' : '☀️';
+  };
+
+  const player = {
+    name: '', age: 0,
+    stats: { money: 50, health: 70, happiness: 70, knowledge: 50, relationships: 50 },
+    questionSet: [], currentQ: 0
+  };
+
+  const questionsPool = [
+    {question:'Do you smoke?',options:[
+      {text:'Yes 🚬',effects:{health:-12,money:-10,happiness:-7}},
+      {text:'No 🚭',effects:{health:8,happiness:3}},
+      {text:'I quit ✋',effects:{health:5,happiness:6,money:4}}
+    ]},
+    {question:'Do you exercise regularly?',options:[
+      {text:'Every day 🏋️‍♂️',effects:{health:16,happiness:8}},
+      {text:'A few times a week 🚶‍♂️',effects:{health:7,happiness:3}},
+      {text:'Rarely / Never 😴',effects:{health:-8,happiness:-4}}
+    ]},
+    {question:'Do you eat healthy meals?',options:[
+      {text:'Balanced Diet 🥗',effects:{health:10,happiness:5}},
+      {text:'Sometimes 🍝',effects:{health:3,happiness:2}},
+      {text:'Mostly Junk Food 🍔',effects:{health:-9}}
+    ]},
+    {question:'How do you handle stress?',options:[
+      {text:'Meditation / Relax 🧘‍♂️',effects:{happiness:12,health:6}},
+      {text:'Talk with friends 👥',effects:{happiness:10,relationships:6}},
+      {text:'Ignore it 😶',effects:{health:-7,happiness:-7}}
+    ]},
+    {question:'What is your social life like?',options:[
+      {text:'Very active 🤝',effects:{relationships:16,happiness:5}},
+      {text:'Somewhat active 🙂',effects:{relationships:7}},
+      {text:'Lonely 😔',effects:{relationships:-10,happiness:-5}}
+    ]},
+    {question:'How do you manage your finances?',options:[
+      {text:'Budget and Save 💰',effects:{money:15}},
+      {text:'Spend as I like 🛒',effects:{money:-6,happiness:4}},
+      {text:'Often broke 😬',effects:{money:-15}}
+    ]},
+    {question:'How many hours do you sleep?',options:[
+      {text:'7-8 hrs 😴',effects:{health:10,happiness:3}},
+      {text:'5-6 hrs 💤',effects:{health:-6,happiness:-2}},
+      {text:'Less than 5 hrs 😵',effects:{health:-13,happiness:-7}}
+    ]},
+    {question:'Relationship status?',options:[
+      {text:'Supportive partner ❤️',effects:{relationships:14,happiness:5}},
+      {text:'Single but social 🤗',effects:{relationships:8}},
+      {text:'Lonely 😶',effects:{relationships:-9,happiness:-4}}
+    ]},
+    {question:'Do you drink alcohol?',options:[
+      {text:'Never 🚫',effects:{health:6}},
+      {text:'Occasionally 🍷',effects:{health:-3}},
+      {text:'Frequently 🍻',effects:{health:-10,money:-7}}
+    ]},
+    {question:'Are you learning new skills?',options:[
+      {text:'Always 📚',effects:{knowledge:15,happiness:7}},
+      {text:'Sometimes 📝',effects:{knowledge:6}},
+      {text:'Rarely 😴',effects:{knowledge:-7}}
+    ]},
+    {question:'How disciplined are you?',options:[
+      {text:'Very 🎯',effects:{happiness:8,money:9,knowledge:9}},
+      {text:'Somewhat 😌',effects:{happiness:4,money:4,knowledge:4}},
+      {text:'Not much 😅',effects:{happiness:-5}}
+    ]},
+    {question:'Do you take vacations or breaks?',options:[
+      {text:'Often ✈️',effects:{happiness:9,health:5}},
+      {text:'Rarely 🏠',effects:{happiness:-5}},
+      {text:'Never 😩',effects:{health:-6,happiness:-7}}
+    ]},
+    {question:'How much screen time daily?',options:[
+      {text:'Less than 2 hrs 📵',effects:{health:8}},
+      {text:'3-5 hrs 📱',effects:{health:-3}},
+      {text:'More than 5 hrs 💻',effects:{health:-9}}
+    ]},
+    {question:'How is your mental health?',options:[
+      {text:'Great! 😊',effects:{happiness:12,health:5}},
+      {text:'Ok 😐',effects:{happiness:4}},
+      {text:'Struggling 😞',effects:{happiness:-8,health:-6}}
+    ]},
+    {question:'Do you take risks?',options:[
+      {text:'Yes, often! ⚡',effects:{money:8,happiness:7,health:-3}},
+      {text:'Sometimes 🤔',effects:{money:4}},
+      {text:'Never 😌',effects:{happiness:-3}}
+    ]},
+    {question:'Do you play sports?',options:[
+      {text:'Yes 🏀',effects:{health:8,happiness:6}},
+      {text:'Sometimes 🎮',effects:{health:2}},
+      {text:'No 😔',effects:{health:-4}}
+    ]},
+    {question:'How do you treat others?',options:[
+      {text:'Kindness 🥰',effects:{relationships:12,happiness:7}},
+      {text:'Neutral 🙂',effects:{relationships:5}},
+      {text:'Rude 😡',effects:{relationships:-11,happiness:-6}}
+    ]},
+    {question:'Do you help in your community?',options:[
+      {text:'Yes, volunteer 👏',effects:{happiness:7,relationships:9}},
+      {text:'Sometimes',effects:{relationships:5}},
+      {text:'Never 😬',effects:{relationships:-9}}
+    ]},
+    {question:'Are you spiritual or religious?',options:[
+      {text:'Yes 🙏',effects:{happiness:8}},
+      {text:'Somewhat 🧘‍♂️',effects:{happiness:4}},
+      {text:'Not at all',effects:{happiness:-2}}
+    ]},
+    {question:'Final: Do you feel fulfilled?',options:[
+      {text:'Absolutely! 😃',effects:{happiness:13}},
+      {text:'Mostly 🙂',effects:{happiness:6}},
+      {text:'Not yet 😕',effects:{happiness:-7}}
+    ]}
+  ];
+
+  function getTip(score) {
+    const high = [
+      "Keep up your healthy habits! Consistency is key. 💪",
+      "Stay curious—learning new things boosts long-term happiness!",
+      "Maintain strong relationships; they're a key to a fulfilling life.",
+      "Balance rest, work, and fun—you’re on the right path!"
+    ];
+    const med = [
+      "Consider adding a little more exercise or sleep for extra energy!",
+      "Try setting a small new goal—little progress adds up.",
+      "Take time for hobbies or friends to boost happiness.",
+      "Managing your money just a bit better can improve your results."
+    ];
+    const low = [
+      "Small daily changes can bring big improvements—start with sleep or healthier meals.",
+      "Don't be afraid to reach out to friends or family for support.",
+      "Try limiting screen time for a week and see how you feel!",
+      "You can always improve; take one positive step tomorrow."
+    ];
+    if (score >= 80) return high[Math.floor(Math.random() * high.length)];
+    if (score >= 60) return med[Math.floor(Math.random() * med.length)];
+    return low[Math.floor(Math.random() * low.length)];
+  }
+
+  function shuffleArray(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      let j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+  }
+
+  let questionIdx = 0;
+  let questionsArray = [];
+
+  function showIntro() {
+    container.innerHTML = `
+      <button id="themeToggle" title="Light/Dark mode" aria-label="Light/Dark mode">🌗</button>
+      <h1 class="logo" style="margin-top:30px;">
+      Life Decisions Simulator
+      </h1>
+      <span class="logo-flash">⚡</span>
+      <p style="margin:14px auto 20px;">Enter your name and age to start.</p>
+      <input id="name" type="text" placeholder="Your Name" class="big-input" />
+      <input id="age" type="number" min="10" max="60" placeholder="Age" class="big-input" />
+      <button id="startBtn" disabled style="margin-top:8px;">Start Journey 🚀</button>
+      <div class="footer-by">created by BOOMBAMA</div>
+    `;
+    document.getElementById('themeToggle').onclick = btnTheme.onclick;
+
+    const nameEl = document.getElementById('name');
+    const ageEl = document.getElementById('age');
+    const startBtn = document.getElementById('startBtn');
+    function checkValid() {
+      const nameOK = nameEl.value.trim().length > 0;
+      const ageVal = parseInt(ageEl.value);
+      startBtn.disabled = !(nameOK && ageVal >= 10 && ageVal <= 60);
+    }
+    nameEl.oninput = checkValid;
+    ageEl.oninput = checkValid;
+    startBtn.onclick = () => {
+      player.name = nameEl.value.trim();
+      player.age = parseInt(ageEl.value);
+      questionIdx = 0;
+      questionsArray = questionsPool.slice();
+      shuffleArray(questionsArray);
+      showQuestion();
+      showProgressBar();
+      updateProgressBar();
+    };
+  }
+
+  function showProgressBar() {
+    if (!document.getElementById('progress-root')) {
+      const barWrap = document.createElement('div');
+      barWrap.className = 'progress-bar-wrapper';
+      barWrap.id = 'progress-root';
+      barWrap.innerHTML = `<div class="progress-bar-container"><div class="progress-bar"></div></div>`;
+      container.appendChild(barWrap);
+    }
+  }
+
+  function updateProgressBar() {
+    const percent = questionIdx / questionsArray.length * 100;
+    const bar = container.querySelector('.progress-bar');
+    if (bar) bar.style.width = percent + '%';
+  }
+
+  function showQuestion() {
+    if (questionIdx >= questionsArray.length) return showResults();
+    updateProgressBar();
+    const q = questionsArray[questionIdx];
+    container.innerHTML = `
+      <button id="themeToggle" title="Light/Dark mode" aria-label="Light/Dark mode">${themeDark ? "🌗":"☀️"}</button>
+      <h2 style="margin-top:48px;margin-bottom:16px;">${q.question}</h2>
+      <div class="choices">
+      ${q.options.map((opt,i)=>`<button data-i="${i}">${opt.text}</button>`).join('')}
+      </div>
+      <div class="stats">
+        <strong>Life Stats:</strong><br>
+        💰 ${player.stats.money} | ❤️ ${player.stats.health} | 😊 ${player.stats.happiness} <br>
+        📚 ${player.stats.knowledge} | 🤝 ${player.stats.relationships}
+      </div>
+      <div class="footer-by">created by BOOMBAMA</div>
+    `;
+    document.getElementById('themeToggle').onclick = btnTheme.onclick;
+    showProgressBar();
+    updateProgressBar();
+    container.querySelectorAll('.choices button').forEach(btn=>{
+      btn.onclick = () => {
+        const idx = parseInt(btn.dataset.i);
+        const effects = q.options[idx].effects;
+        for (let key in effects) {
+          player.stats[key] += effects[key];
+          if (player.stats[key]>100) player.stats[key]=100;
+          if (player.stats[key]<0) player.stats[key]=0;
+        }
+        questionIdx++;
+        showQuestion();
+      };
+    });
+  }
+
+  function showResults() {
+    const s = player.stats;
+    const score = (
+      s.money*0.18 + s.health*0.27 + s.happiness*0.25 + s.knowledge*0.15 + s.relationships*0.15
+    ).toFixed(1);
+    const tip = getTip(Number(score));
+    container.innerHTML = `
+      <button id="themeToggle" title="Light/Dark mode" aria-label="Light/Dark mode">${themeDark ? "🌗":"☀️"}</button>
+      <h2 style="margin-top:70px;">🎉 Journey Ends 🎉</h2>
+      <span class="logo-flash">⚡</span>
+      <p>${player.name}, your score:<br><b style="font-size:2rem;">${score}%</b></p>
+      <div class="stats">
+        <strong>Final Stats:</strong><br>
+        💰 ${s.money} | ❤️ ${s.health} | 😊 ${s.happiness} <br>
+        📚 ${s.knowledge} | 🤝 ${s.relationships}
+      </div>
+      <div class="tip">${tip}</div>
+      <button onclick="location.reload()" style="background:#ffb347;color:black;margin-top:18px;">Play Again 🔄</button>
+      <div class="footer-by">created by BOOMBAMA</div>
+    `;
+    document.getElementById('themeToggle').onclick = btnTheme.onclick;
+    showProgressBar();
+    updateProgressBar();
+    const bar = container.querySelector('.progress-bar');
+    if (bar) bar.style.width = '100%';
+  }
+  showIntro();
+})();
+</script>
+</body>
+</html>

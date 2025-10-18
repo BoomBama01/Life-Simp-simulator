@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Life Decisions Simulator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+  body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #7f53ac, #647dee);
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow-x: hidden;
+    padding: 10px;
+  }
+  .container {
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 15px;
+    padding: 30px;
+    max-width: 480px;
+    width: 100%;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+    text-align: center;
+    backdrop-filter: blur(10px);
+    animation: fadeIn 1s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px);}
+    to { opacity: 1; transform: translateY(0);}
+  }
+  h1 {
+    margin-bottom: 15px;
+    font-weight: 600;
+  }
+  input[type="text"], input[type="number"] {
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    width: 80%;
+    margin: 10px 0;
+    font-size: 1rem;
+  }
+  button {
+    background: #ffcb57;
+    border: none;
+    color: #333;
+    padding: 12px 25px;
+    font-weight: 600;
+    border-radius: 10px;
+    cursor: pointer;
+    margin: 10px;
+    transition: background 0.3s, transform 0.2s;
+  }
+  button:hover {
+    background: #ffd87a;
+    transform: scale(1.05);
+  }
+  .choices {
+    margin-top: 20px;
+  }
+  .choices button {
+    width: 90%;
+    margin: 8px 0;
+  }
+  .stats {
+    background: rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 10px 15px;
+    margin-top: 20px;
+    text-align: left;
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+  .fade-out {
+    animation: fadeOut 0.6s forwards;
+  }
+  @keyframes fadeOut {
+    from {opacity:1;}
+    to {opacity:0; transform: translateY(-20px);}
+  }
+</style>
+</head>
+<body>
+  <div class="container" id="gameContainer">
+    <!-- Content injection -->
+  </div>
+
+<script>
+  const game = document.getElementById('gameContainer');
+
+  // Player's life stats and properties
+  const player = {
+    name: '',
+    age: 0,
+    money: 50,
+    health: 70,
+    happiness: 70,
+    knowledge: 50,
+    relationships: 50,
+    stage: 0
+  };
+
+  // Life scenarios with choices updating stats
+  const lifeStages = [
+    {
+      question: (player) => `Welcome ${player.name}, you're ${player.age}. Do you want to go to college or start working?`,
+      choices: [
+        {
+          text: 'Go to college',
+          effects: { money: -30, knowledge: +40, relationships: +10, happiness: 10 },
+          nextStage: 1
+        },
+        {
+          text: 'Start a job',
+          effects: { money: +40, knowledge: +10, health: -10, relationships: 0, happiness: 5 },
+          nextStage: 1
+        }
+      ]
+    },
+    {
+      question: () => "You've been working or studying for a few years. Do you want to invest in your health or social life?",
+      choices: [
+        {
+          text: 'Invest in health',
+          effects: { health: +30, money: -20, happiness: +5 },
+          nextStage: 2
+        },
+        {
+          text: 'Invest in relationships',
+          effects: { relationships: +30, money: -10, happiness: +10 },
+          nextStage: 2
+        },
+        {
+          text: 'Keep working hard',
+          effects: { money: +30, health: -20, happiness: -5 },
+          nextStage: 2
+        }
+      ]
+    },
+    {
+      question: () => "A chance for a risky business opportunity with high rewards but high stress. Do you take it?",
+      choices: [
+        {
+          text: 'Take the risk',
+          effects: () => {
+            const luck = Math.random();
+            if (luck > 0.5) {
+              return { money: +60, happiness: +20, health: -15 };
+            } else {
+              return { money: -40, happiness: -20, health: -5 };
+            }
+          },
+          nextStage: 3
+        },
+        {
+          text: 'Play safe with steady job',
+          effects: { money: +20, happiness: 0, health: 0 },
+          nextStage: 3
+        }
+      ]
+    },
+    {
+      question: () => "You face an unexpected event. What happens?",
+      choices: [
+        {
+          text: 'You got sick',
+          effects: { health: -30, happiness: -10, money: -20 },
+          nextStage: 4
+        },
+        {
+          text: 'You got promoted',
+          effects: { money: +50, happiness: +30, knowledge: +10 },
+          nextStage: 4
+        },
+        {
+          text: 'Nothing special, keep going',
+          effects: { money: 0, happiness: 0, health: 0 },
+          nextStage: 4
+        }
+      ]
+    },
+    {
+      question: () => "Final stage! Do you retire early or keep working until old age?",
+      choices: [
+        {
+          text: 'Retire early',
+          effects: { happiness: +20, health: +20, money: -20 },
+          nextStage: null
+        },
+        {
+          text: 'Work till old age',
+          effects: { money: +40, health: -30, happiness: -15 },
+          nextStage: null
+        }
+      ]
+    }
+  ];
+
+  function applyEffects(effects) {
+    if (typeof effects === 'function') effects = effects();
+    for (const stat in effects) {
+      player[stat] += effects[stat];
+      if (player[stat] > 100) player[stat] = 100;
+      if (player[stat] < 0) player[stat] = 0;
+    }
+  }
+
+  function showStats() {
+    return `
+      <div class="stats">
+        <strong>Life Stats:</strong><br />
+        Money: ${player.money}<br />
+        Health: ${player.health}<br />
+        Happiness: ${player.happiness}<br />
+        Knowledge: ${player.knowledge}<br />
+        Relationships: ${player.relationships}
+      </div>
+    `;
+  }
+
+  function showSummary() {
+    let story = "";
+    if (player.money > 70) story += "You became financially successful. ";
+    else if (player.money < 30) story += "You struggled financially. ";
+    else story += "You maintained a moderate income. ";
+
+    if (player.health > 70) story += "You stayed in great shape and health. ";
+    else if (player.health < 30) story += "You faced many health challenges. ";
+    else story += "You had an average health condition. ";
+
+    if (player.happiness > 70) story += "Your life was full of joy and fun. ";
+    else if (player.happiness < 30) story += "You often felt unhappy and stressed. ";
+    else story += "Your life was generally okay emotionally. ";
+
+    if (player.knowledge > 70) story += "Your wisdom guided you well through life. ";
+    else if (player.knowledge < 30) story += "You missed many learning opportunities. ";
+    else story += "You had decent knowledge for life decisions. ";
+
+    if (player.relationships > 70) story += "You built strong relationships and friendships. ";
+    else if (player.relationships < 30) story += "You often felt lonely and isolated. ";
+    else story += "You maintained average social connections. ";
+
+    return `
+      <h2>Life Summary for ${player.name}</h2>
+      <p>${story}</p>
+      ${showStats()}
+      <button onclick="restartGame()">Play Again</button>
+    `;
+  }
+
+  function restartGame() {
+    player.name = '';
+    player.age = 0;
+    player.money = 50;
+    player.health = 70;
+    player.happiness = 70;
+    player.knowledge = 50;
+    player.relationships = 50;
+    player.stage = 0;
+    showStartScreen();
+  }
+
+  function showStartScreen() {
+    game.innerHTML = `
+      <h1>Life Decisions Simulator</h1>
+      <p>Enter your name and age to start your life journey.</p>
+      <input type="text" id="playerName" placeholder="Your Name" maxlength="20" />
+      <input type="number" id="playerAge" placeholder="Your Age" min="10" max="100" />
+      <br/>
+      <button id="startBtn">Start</button>
+    `;
+
+    document.getElementById('startBtn').addEventListener('click', () => {
+      const nameInput = document.getElementById('playerName').value.trim();
+      const ageInput = parseInt(document.getElementById('playerAge').value);
+      if (!nameInput) {
+        alert("Please enter your name.");
+        return;
+      }
+      if (!ageInput || ageInput < 10 || ageInput > 100) {
+        alert("Please enter a valid age between 10 and 100.");
+        return;
+      }
+      player.name = nameInput;
+      player.age = ageInput;
+      player.stage = 0;
+      showStage();
+    });
+  }
+
+  function animateTransition(next) {
+    game.classList.add('fade-out');
+    setTimeout(() => {
+      next();
+      game.classList.remove('fade-out');
+    }, 600);
+  }
+
+  function showStage() {
+    if (player.stage === null || player.stage >= lifeStages.length) {
+      animateTransition(() => {
+        game.innerHTML = showSummary();
+      });
+      return;
+    }
+
+    const stage = lifeStages[player.stage];
+    const questionText = typeof stage.question === 'function' ? stage.question(player) : stage.question;
+    let html = `<h2>${questionText}</h2><div class="choices">`;
+
+    stage.choices.forEach((choice, idx) => {
+      html += `<button data-choice="${idx}">${choice.text}</button>`;
+    });
+    html += `</div>${showStats()}`;
+
+    animateTransition(() => {
+      game.innerHTML = html;
+      const buttons = game.querySelectorAll('.choices button');
+      buttons.forEach(button => {
+        button.addEventListener('click', () => {
+          const choiceIndex = parseInt(button.getAttribute('data-choice'));
+          const choice = stage.choices[choiceIndex];
+          applyEffects(choice.effects);
+          player.stage = choice.nextStage;
+          // Add random event with ~30% chance after some stages
+          if ([1,2,3].includes(player.stage) && Math.random() < 0.3) {
+            triggerRandomEvent();
+          } else {
+            showStage();
+          }
+        });
+      });
+    });
+  }
+
+  function triggerRandomEvent() {
+    const events = [
+      {
+        text: "You got sick unexpectedly!",
+        effects: { health: -25, happiness: -15, money: -10 }
+      },
+      {
+        text: "You received a surprise promotion!",
+        effects: { money: +40, happiness: +20, knowledge: +10 }
+      },
+      {
+        text: "Your close friend moved away...",
+        effects: { relationships: -20, happiness: -10 }
+      },
+      {
+        text: "You won a small lottery prize!",
+        effects: { money: +30, happiness: +10 }
+      },
+      {
+        text: "Stress from work is wearing you down.",
+        effects: { health: -15, happiness: -20 }
+      }
+    ];
+
+    const ev = events[Math.floor(Math.random() * events.length)];
+
+    animateTransition(() => {
+      game.innerHTML = `
+        <h2>Random Event</h2>
+        <p>${ev.text}</p>
+        ${showStats()}
+        <button id="continueBtn">Continue</button>
+      `;
+
+      applyEffects(ev.effects);
+
+      document.getElementById('continueBtn').addEventListener('click', () => {
+        showStage();
+      });
+    });
+  }
+
+  // Start game on page load
+  showStartScreen();
+
+</script>
+</body>
+</html>
